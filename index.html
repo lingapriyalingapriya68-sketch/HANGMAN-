@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game | Classic Word Guessing Challenge</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="game-container">
+        <!-- Header Section -->
+        <header>
+            <div class="logo-area">
+                <span class="logo-icon">🪢</span>
+                <h1>Hangman Classic</h1>
+            </div>
+            <div class="header-actions">
+                <button id="btn-stats" class="icon-btn" title="View Statistics" aria-label="Statistics">📊</button>
+                <button id="btn-rules" class="icon-btn" title="How to Play" aria-label="Rules">❓</button>
+                <button id="btn-sound" class="icon-btn" title="Toggle Sound" aria-label="Sound Toggle">🔊</button>
+                <button id="btn-theme" class="icon-btn" title="Toggle Light/Dark Theme" aria-label="Theme Toggle">🌙</button>
+            </div>
+        </header>
+
+        <!-- Status & Filter Bar -->
+        <div class="status-bar">
+            <div class="filters-group">
+                <div class="select-wrapper">
+                    <label for="select-category">Category</label>
+                    <select id="select-category">
+                        <option value="all">🌟 All Categories</option>
+                        <option value="Animals">🦁 Animals</option>
+                        <option value="Programming">💻 Programming</option>
+                        <option value="Countries">🌍 Countries</option>
+                        <option value="Food & Cooking">🍕 Food & Cooking</option>
+                        <option value="Science & Space">🚀 Science & Space</option>
+                        <option value="Movies & Pop Culture">🎬 Movies & Pop</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <label for="select-difficulty">Difficulty</label>
+                    <select id="select-difficulty">
+                        <option value="easy">Easy (8 lives)</option>
+                        <option value="medium" selected>Medium (6 lives)</option>
+                        <option value="hard">Hard (4 lives)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="stats-group">
+                <div class="stat-pill" title="Current Score">
+                    ⭐ <span id="score-display">0</span> pts
+                </div>
+                <div class="stat-pill" title="Current Win Streak">
+                    🔥 <span id="streak-display">0</span> streak
+                </div>
+                <div class="stat-pill lives-pill" title="Remaining Lives">
+                    <span id="lives-icons" class="lives-container"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Board -->
+        <main class="board-container">
+            <!-- Gallows & SVG Figure -->
+            <section class="gallows-card" aria-label="Hangman visual display">
+                <div class="svg-wrapper">
+                    <svg id="hangman-svg" viewBox="0 0 240 260">
+                        <!-- Scaffold / Gallows -->
+                        <line class="gallows-part" x1="20" y1="240" x2="140" y2="240" />
+                        <line class="gallows-part" x1="60" y1="240" x2="60" y2="25" />
+                        <line class="gallows-part" x1="58" y1="25" x2="180" y2="25" />
+                        <line class="gallows-part" x1="60" y1="65" x2="100" y2="25" />
+                        <line class="rope-part" x1="180" y1="25" x2="180" y2="60" />
+
+                        <!-- Hangman Body Parts -->
+                        <circle id="part-head" class="man-part" cx="180" cy="78" r="18" />
+                        
+                        <!-- Living Face Elements -->
+                        <circle id="part-eye-l" class="face-part" cx="174" cy="74" r="1.8" />
+                        <circle id="part-eye-r" class="face-part" cx="186" cy="74" r="1.8" />
+                        <path id="part-smile" class="face-part" d="M174 83 Q180 87 186 83" />
+
+                        <!-- Dead Face Elements -->
+                        <path id="part-dead-face" class="face-part face-dead" d="M172 72 L176 76 M176 72 L172 76 M184 72 L188 76 M188 72 L184 76 M175 85 Q180 81 185 85" />
+
+                        <!-- Torso, Arms, Legs -->
+                        <line id="part-torso" class="man-part" x1="180" y1="96" x2="180" y2="155" />
+                        <line id="part-arm-l" class="man-part" x1="180" y1="110" x2="152" y2="138" />
+                        <line id="part-arm-r" class="man-part" x1="180" y1="110" x2="208" y2="138" />
+                        <line id="part-leg-l" class="man-part" x1="180" y1="155" x2="156" y2="205" />
+                        <line id="part-leg-r" class="man-part" x1="180" y1="155" x2="204" y2="205" />
+                    </svg>
+                </div>
+            </section>
+
+            <!-- Word & Hint Card -->
+            <section class="word-card">
+                <div class="card-top-info">
+                    <span id="category-badge" class="category-tag">Animals</span>
+                    <button id="btn-hint" class="btn-hint">
+                        💡 Need Clue? (<span id="hints-left">1</span> left)
+                    </button>
+                </div>
+
+                <div id="clue-box" class="clue-box hidden">
+                    <strong>Clue:</strong> <span id="clue-text">Hint will appear here</span>
+                </div>
+
+                <!-- Word Display Container -->
+                <div class="word-display-area">
+                    <div id="letters-container" class="letters-container"></div>
+                </div>
+
+                <!-- Incorrect Guesses -->
+                <div class="wrong-guesses-wrapper">
+                    <span>Wrong guesses:</span>
+                    <div id="wrong-chips" class="wrong-chips">
+                        <em style="color: var(--text-muted); font-size: 0.8rem;">None yet</em>
+                    </div>
+                </div>
+
+                <!-- Bottom In-game Controls -->
+                <div class="action-controls">
+                    <button id="btn-give-up" class="secondary-btn">Give Up</button>
+                    <button id="btn-new-round" class="primary-btn">🔄 Next Word</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Virtual Keyboard -->
+        <section class="keyboard-section" aria-label="Virtual Keyboard">
+            <div class="keyboard-row" id="kb-row-1"></div>
+            <div class="keyboard-row" id="kb-row-2"></div>
+            <div class="keyboard-row" id="kb-row-3"></div>
+        </section>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="modal-win" class="modal-overlay" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <span class="modal-header-icon">🏆</span>
+            <h2 class="modal-title" style="color: var(--color-correct)">Victory!</h2>
+            <p class="modal-desc">Brilliant deduction! You solved the word.</p>
+
+            <div class="result-reveal-box">
+                <div id="win-word" class="result-word">WORD</div>
+                <div id="win-clue" class="result-clue">Clue explanation</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span id="win-round-points" class="stat-box-val">+100</span>
+                    <span class="stat-box-lbl">Points Earned</span>
+                </div>
+                <div class="stat-box">
+                    <span id="win-round-streak" class="stat-box-val">🔥 1</span>
+                    <span class="stat-box-lbl">Streak</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-win-next" class="primary-btn" style="width: 100%;">Play Next Word ➡️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Defeat / Game Over Modal -->
+    <div id="modal-lose" class="modal-overlay" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <span class="modal-header-icon">💀</span>
+            <h2 class="modal-title" style="color: var(--color-wrong)">Game Over!</h2>
+            <p class="modal-desc">You ran out of lives this round.</p>
+
+            <div class="result-reveal-box">
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">The hidden word was:</div>
+                <div id="lose-word" class="result-word" style="color: var(--color-wrong)">WORD</div>
+                <div id="lose-clue" class="result-clue">Clue explanation</div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-lose-retry" class="primary-btn" style="width: 100%;">Try Again 🔄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div id="modal-stats" class="modal-overlay" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <button class="modal-close-x" id="btn-close-stats" aria-label="Close">✕</button>
+            <span class="modal-header-icon">📈</span>
+            <h2 class="modal-title">Your Statistics</h2>
+            <p class="modal-desc">Track your lifetime progress and performance</p>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span id="stat-played" class="stat-box-val">0</span>
+                    <span class="stat-box-lbl">Games Played</span>
+                </div>
+                <div class="stat-box">
+                    <span id="stat-winrate" class="stat-box-val">0%</span>
+                    <span class="stat-box-lbl">Win Rate</span>
+                </div>
+                <div class="stat-box">
+                    <span id="stat-best-streak" class="stat-box-val">0</span>
+                    <span class="stat-box-lbl">Best Streak</span>
+                </div>
+                <div class="stat-box">
+                    <span id="stat-high-score" class="stat-box-val">0</span>
+                    <span class="stat-box-lbl">High Score</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-reset-stats" class="secondary-btn" style="width: 100%;">Reset Statistics</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rules / Help Modal -->
+    <div id="modal-rules" class="modal-overlay" role="dialog" aria-modal="true">
+        <div class="modal-content" style="text-align: left;">
+            <button class="modal-close-x" id="btn-close-rules" aria-label="Close">✕</button>
+            <h2 class="modal-title" style="text-align: center; margin-bottom: 1rem;">📖 How to Play</h2>
+            <ul style="color: var(--text-secondary); line-height: 1.6; font-size: 0.9rem; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li><strong>Goal:</strong> Guess the hidden word one letter at a time before the hangman is fully drawn!</li>
+                <li><strong>Keyboard:</strong> Click letters on the on-screen keyboard or type them directly using your physical keyboard.</li>
+                <li><strong>Lives:</strong> Each incorrect guess removes 1 life and adds a piece to the hangman.</li>
+                <li><strong>Difficulties:</strong>
+                    <br>• Easy: 8 lives
+                    <br>• Medium: 6 lives
+                    <br>• Hard: 4 lives
+                </li>
+                <li><strong>Clues:</strong> Click the "Need Clue?" button to reveal the definition/clue for the secret word.</li>
+                <li><strong>Scoring:</strong> Win rounds to build up your streak and earn bonus points based on remaining lives!</li>
+            </ul>
+            <div class="modal-actions" style="margin-top: 1.5rem;">
+                <button id="btn-rules-got-it" class="primary-btn" style="width: 100%;">Got It! Let's Play</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Scripts -->
+    <script src="words.js"></script>
+    <script src="audio.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
